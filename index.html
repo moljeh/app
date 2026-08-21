@@ -16,9 +16,15 @@
 <body data-page="home">
 
     <nav class="navbar">
-       <a href="index.html" class="logo">
-    <img src="assets/logo.png" alt="Arom UI Logo">
-</a>
+        
+        <!-- LOGO DIPERBAIKI DENGAN SISTEM ANTI-RUSAK -->
+        <a href="index.html" class="logo" style="display: flex; align-items: center; text-decoration: none;">
+            <!-- Mencoba memuat file logo.jpg -->
+            <img src="assets/icons/logo.png" alt="Arom UI" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" style="max-height: 40px; width: auto;">
+            <!-- Jika gambar gagal dimuat (404), teks ini akan otomatis muncul menggantikan gambar -->
+            <span style="display: none; font-size: 1.5rem; font-weight: 700; color: var(--primary);">Arom UI</span>
+        </a>
+        
         <div class="nav-links">
             <a href="index.html" style="color: var(--primary); font-weight: 600;">Home</a>
             <a href="products.html">Katalog Template</a>
