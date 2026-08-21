@@ -15,23 +15,27 @@
 </head>
 <body data-page="home">
 
+    <!-- NAVBAR UTAMA (HARUS SAMA DI SEMUA HALAMAN) -->
     <nav class="navbar">
-        
-        <!-- LOGO DIPERBAIKI DENGAN SISTEM ANTI-RUSAK -->
-        <a href="index.html" class="logo" style="display: flex; align-items: center; text-decoration: none;">
-            <!-- Mencoba memuat file logo.jpg -->
-            <img src="assets/icons/logo.png" alt="Arom UI" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" style="max-height: 40px; width: auto;">
-            <!-- Jika gambar gagal dimuat (404), teks ini akan otomatis muncul menggantikan gambar -->
-            <span style="display: none; font-size: 1.5rem; font-weight: 700; color: var(--primary);">Arom UI</span>
+        <!-- Logo di Tengah (Desktop) / Kiri (HP) -->
+        <a href="index.html" class="logo-center">
+            <span style="font-size: 1.8rem; font-weight: 800; color: var(--primary); letter-spacing: -1px;">Arom UI</span>
         </a>
         
-        <div class="nav-links">
-            <a href="index.html" style="color: var(--primary); font-weight: 600;">Home</a>
-            <a href="products.html">Katalog Template</a>
-            <a href="tentang.html">Tentang</a>
-            <a href="kontak.html">Kontak</a>
+        <!-- Tombol Hamburger (Hanya Muncul di HP) -->
+        <button class="hamburger" id="hamburger">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <!-- Menu Navigasi -->
+        <div class="nav-right" id="nav-menu">
+            <a href="index.html" class="nav-item active">Home</a>
+            <a href="products.html" class="nav-item">Katalog</a>
+            <a href="tentang.html" class="nav-item">Tentang</a>
+            <a href="kontak.html" class="btn-nav">Hubungi Kami</a>
         </div>
     </nav>
+    <!-- AKHIR NAVBAR UTAMA -->
 
     <header class="hero">
         <h1>Template Website Premium Siap Pakai</h1>
