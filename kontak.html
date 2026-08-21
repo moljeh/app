@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kontak Kami - LuminaUI</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body data-page="kontak">
+
+    <nav class="navbar">
+        <a href="index.html" class="logo">LuminaUI</a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="products.html">Produk</a>
+            <a href="products.html">Kategori</a>
+            <a href="tentang.html">Tentang</a>
+            <a href="kontak.html" style="color: var(--primary); font-weight: 600;">Kontak</a>
+        </div>
+    </nav>
+
+    <section class="section">
+        <h2 class="section-title">Hubungi Kami</h2>
+        
+        <div class="detail-container fade-in">
+            <!-- Kolom Informasi Kiri -->
+            <div class="contact-wrapper">
+                <h3>Informasi Kontak</h3>
+                <p style="color: var(--gray); margin-bottom: 2rem;">Punya pertanyaan terkait template atau butuh bantuan kustomisasi? Jangan ragu untuk menghubungi tim kami.</p>
+                
+                <div class="contact-info">
+                    <div class="info-item">
+                        <i class="fab fa-whatsapp"></i>
+                        <div>
+                            <h4>WhatsApp / Telepon</h4>
+                            <p>+62 812-3456-7890</p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="far fa-envelope"></i>
+                        <div>
+                            <h4>Email Support</h4>
+                            <p>support@luminaui.com</p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="far fa-clock"></i>
+                        <div>
+                            <h4>Jam Operasional</h4>
+                            <p>Senin - Jumat (09:00 - 17:00 WIB)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kolom Form Kanan (Integrasi WA) -->
+            <div class="contact-wrapper" style="background: var(--light);">
+                <h3>Kirim Pesan</h3>
+                <form id="contact-form" style="margin-top: 1.5rem;">
+                    <div class="form-group">
+                        <label for="nama">Nama Lengkap</label>
+                        <input type="text" id="nama" class="form-control" placeholder="Masukkan nama Anda" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="kebutuhan">Kebutuhan</label>
+                        <select id="kebutuhan" class="form-control" required>
+                            <option value="Pertanyaan Pra-Pembelian">Pertanyaan Pra-Pembelian</option>
+                            <option value="Bantuan Teknis / Support">Bantuan Teknis / Support</option>
+                            <option value="Jasa Kustomisasi">Jasa Kustomisasi Template</option>
+                            <option value="Kerja Sama">Kerja Sama / Lainnya</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pesan">Pesan Anda</label>
+                        <textarea id="pesan" class="form-control" placeholder="Tuliskan detail pertanyaan atau pesan Anda di sini..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        <i class="fab fa-whatsapp"></i> Kirim via WhatsApp
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 LuminaUI Marketplace. All rights reserved.</p>
+    </footer>
+
+    <script src="js/products.js"></script>
+    <script src="js/app.js"></script>
+    
+    <!-- Script khusus untuk halaman kontak -->
+    <script>
+        document.getElementById('contact-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const nama = document.getElementById('nama').value;
+            const kebutuhan = document.getElementById('kebutuhan').value;
+            const pesan = document.getElementById('pesan').value;
+            
+            // Mengambil nomor WA dari variabel yang ada di app.js
+            // Jika variabel ADMIN_PHONE belum terbaca, kita set manual di sini
+            const adminPhone = typeof ADMIN_PHONE !== 'undefined' ? ADMIN_PHONE : "6281234567890"; 
+            
+            const waMessage = `Halo Tim LuminaUI,\n\nNama saya *${nama}*.\nKebutuhan: *${kebutuhan}*\n\n${pesan}`;
+            const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(waMessage)}`;
+            
+            window.open(waUrl, '_blank');
+        });
+    </script>
+</body>
+</html>
