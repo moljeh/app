@@ -121,3 +121,15 @@ if (page === "detail") {
         `;
     }
 }
+
+// --- REGISTER SERVICE WORKER UNTUK PWA ---
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('ServiceWorker terdaftar dengan sukses dengan scope: ', registration.scope);
+            }, err => {
+                console.log('Pendaftaran ServiceWorker gagal: ', err);
+            });
+    });
+}
