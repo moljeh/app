@@ -1,0 +1,21 @@
+{
+  "name": "Buku Kas Pribadi",
+  "short_name": "Buku Kas",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

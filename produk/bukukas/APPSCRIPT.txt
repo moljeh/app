@@ -1,0 +1,128 @@
+function pastikanSheetAda(namaSheet, header, ss) {
+  let sheet = ss.getSheetByName(namaSheet);
+  if (!sheet) {
+    sheet = ss.insertSheet(namaSheet);
+    if (header && header.length > 0) {
+      sheet.appendRow(header);
+      sheet.getRange(1, 1, 1, header.length).setFontWeight("bold");
+    }
+  }
+  return sheet;
+}
+
+function doGet(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetTransaksi = pastikanSheetAda("Transaksi", ["ID", "Tanggal", "Jenis", "Kategori", "Nominal", "Keterangan"], ss);
+    const sheetKategori = pastikanSheetAda("Kategori", ["Jenis", "Nama Kategori"], ss);
+    
+    // Inisialisasi Sheet LOGIN
+    const sheetLogin = pastikanSheetAda("LOGIN", ["Username", "Password"], ss);
+    if (sheetLogin.getLastRow() <= 1) {
+      // Akun bawaan jika database kosong
+      sheetLogin.appendRow(["admin", "admin123"]);
+    }
+
+    // Ambil Kategori
+    const dataKat = sheetKategori.getDataRange().getValues();
+    let kategori = { Pemasukan: [], Pengeluaran: [] };
+    for (let i = 1; i < dataKat.length; i++) {
+      if (dataKat[i][0] === "Pemasukan") kategori.Pemasukan.push(dataKat[i][1].toString().trim());
+      if (dataKat[i][0] === "Pengeluaran") kategori.Pengeluaran.push(dataKat[i][1].toString().trim());
+    }
+    
+    if(kategori.Pemasukan.length === 0 && kategori.Pengeluaran.length === 0) {
+      sheetKategori.appendRow(["Pemasukan", "Gaji"]);
+      sheetKategori.appendRow(["Pengeluaran", "Makan & Minum"]);
+      sheetKategori.appendRow(["Pengeluaran", "Transportasi"]);
+      kategori.Pemasukan.push("Gaji");
+      kategori.Pengeluaran.push("Makan & Minum", "Transportasi");
+    }
+
+    // Ambil Transaksi & Hitung Saldo
+    const dataTrans = sheetTransaksi.getDataRange().getValues();
+    let transaksi = [];
+    let totalMasuk = 0;
+    let totalKeluar = 0;
+
+    for (let i = dataTrans.length - 1; i >= 1; i--) {
+      if (dataTrans[i][0]) {
+        let jenis = dataTrans[i][2].toString();
+        let nominal = Number(dataTrans[i][4]) || 0;
+        transaksi.push({ row: i + 1, id: dataTrans[i][0], tanggal: dataTrans[i][1], jenis: jenis, kategori: dataTrans[i][3], nominal: nominal, keterangan: dataTrans[i][5] });
+        if (jenis === "Pemasukan") totalMasuk += nominal;
+        else if (jenis === "Pengeluaran") totalKeluar += nominal;
+      }
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ saldo: totalMasuk - totalKeluar, pemasukan: totalMasuk, pengeluaran: totalKeluar, kategori: kategori, transaksi: transaksi })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (error) { 
+    return ContentService.createTextOutput(JSON.stringify({ error: error.toString() })).setMimeType(ContentService.MimeType.JSON); 
+  }
+}
+
+function doPost(e) {
+  try {
+    const request = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // PROSES LOGIN
+    if (request.action === 'login') {
+      const sheetLogin = ss.getSheetByName("LOGIN");
+      const dataLogin = sheetLogin.getDataRange().getValues();
+      const userReq = request.data.username;
+      const passReq = request.data.password;
+      let valid = false;
+
+      for (let i = 1; i < dataLogin.length; i++) {
+        if (dataLogin[i][0].toString() === userReq && dataLogin[i][1].toString() === passReq) {
+          valid = true; break;
+        }
+      }
+
+      if (valid) {
+        return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Berhasil masuk!" })).setMimeType(ContentService.MimeType.JSON);
+      } else {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, message: "Username atau Password salah!" })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
+    if (request.action === 'tambah_transaksi') {
+      ss.getSheetByName("Transaksi").appendRow(["TRX-" + new Date().getTime(), new Date(request.data.tanggal), request.data.jenis, request.data.kategori, Number(request.data.nominal), request.data.keterangan]);
+      return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (request.action === 'hapus_transaksi') {
+       ss.getSheetByName("Transaksi").deleteRow(request.data.row);
+       return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (request.action === 'simpan_kategori') {
+      let sheet = ss.getSheetByName("Kategori");
+      if(sheet) ss.deleteSheet(sheet);
+      sheet = ss.insertSheet("Kategori");
+      sheet.appendRow(["Jenis", "Nama Kategori"]);
+      sheet.getRange("A1:B1").setFontWeight("bold");
+      const rows = [];
+      request.data.forEach(item => { if(item.nama && item.nama.trim() !== '') rows.push([item.jenis, item.nama]); });
+      if(rows.length > 0) sheet.getRange(2, 1, rows.length, 2).setValues(rows);
+      return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (request.action === 'reset_semua') {
+      let sheetTrans = ss.getSheetByName("Transaksi");
+      if (sheetTrans && sheetTrans.getLastRow() > 1) sheetTrans.getRange(2, 1, sheetTrans.getLastRow() - 1, sheetTrans.getLastColumn()).clearContent();
+      let sheetKat = ss.getSheetByName("Kategori");
+      if(sheetKat) ss.deleteSheet(sheetKat);
+      sheetKat = ss.insertSheet("Kategori");
+      sheetKat.appendRow(["Jenis", "Nama Kategori"]);
+      sheetKat.getRange("A1:B1").setFontWeight("bold");
+      sheetKat.appendRow(["Pemasukan", "Gaji"]); sheetKat.appendRow(["Pengeluaran", "Makan & Minum"]); sheetKat.appendRow(["Pengeluaran", "Transportasi"]);
+      return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Aplikasi direset!" })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+  } catch (error) { 
+    return ContentService.createTextOutput(JSON.stringify({ success: false, message: error.toString() })).setMimeType(ContentService.MimeType.JSON); 
+  }
+}
