@@ -6,7 +6,7 @@ const products = [
     harga: 149000,
     kategori: "Aplikasi Keuangan",
     gambar: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80",
-    demo: "https://moljeh.github.io/app/produk/pembayaransantri",
+    demo: "https://moljeh.github.io/app/produk/bukukas/",
     deskripsi: "Aplikasi Buku Kas Pribadi Digital yang membantu mencatat dan mengelola pemasukan serta pengeluaran dengan lebih mudah, rapi, dan praktis. Setiap pembelian mendapatkan satu aplikasi yang terhubung dengan satu akun Google dan satu Google Apps Script secara khusus, sehingga data keuangan tersimpan pada sistem milik masing-masing pengguna. Dapat digunakan melalui HP maupun komputer dengan tampilan responsive dan mendukung instalasi sebagai aplikasi melalui fitur PWA.",
     fitur: [
         "Dashboard Keuangan",
@@ -38,7 +38,7 @@ const products = [
     harga: 249000,
     kategori: "Administrasi Pesantren",
     gambar: "https://images.unsplash.com/photo-1505664194779-8beaceb93744?auto=format&fit=crop&w=600&q=80",
-    demo: "https://moljeh.github.io/app/produk/bukukas/",
+    demo: "https://moljeh.github.io/app/produk/pembayaransantri",
     deskripsi: "Sistem Pembayaran Santri adalah aplikasi administrasi keuangan yang dirancang untuk membantu pesantren atau lembaga pendidikan dalam mengelola data santri, pembayaran, pemasukan, pengeluaran, hingga laporan keuangan secara lebih praktis dan terorganisir. Aplikasi terintegrasi dengan Google Sheets dan Google Apps Script sebagai sistem penyimpanan data, sehingga dapat digunakan tanpa database hosting khusus. Setiap pembelian mendapatkan satu aplikasi yang dikonfigurasi secara individual menggunakan satu akun Google dan satu Google Apps Script.",
     fitur: [
         "Dashboard Keuangan",
