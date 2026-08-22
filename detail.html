@@ -9,6 +9,43 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#4F46E5">
 <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
+
+
+
+<style id="detail-precision-fix">
+/* Gambar dan panel kanan harus dimulai pada garis atas card yang sama. */
+.detail-container {
+    align-items: stretch !important;
+}
+.detail-container .detail-img {
+    align-self: stretch !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+}
+.detail-container .detail-img img {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    object-fit: contain !important;
+    object-position: top center !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+}
+.detail-container .detail-info {
+    align-self: stretch !important;
+    margin: 0 !important;
+}
+@media (max-width: 768px) {
+    .detail-container .detail-img {
+        min-height: 0 !important;
+    }
+}
+</style>
 </head>
 <body data-page="detail">
 
