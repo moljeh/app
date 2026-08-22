@@ -38,7 +38,7 @@ const products = [
     harga: 249000,
     kategori: "Administrasi Pesantren",
     gambar: "https://images.unsplash.com/photo-1505664194779-8beaceb93744?auto=format&fit=crop&w=600&q=80",
-    demo: "#",
+    demo: "https://moljeh.github.io/app/produk/bukukas/",
     deskripsi: "Sistem Pembayaran Santri adalah aplikasi administrasi keuangan yang dirancang untuk membantu pesantren atau lembaga pendidikan dalam mengelola data santri, pembayaran, pemasukan, pengeluaran, hingga laporan keuangan secara lebih praktis dan terorganisir. Aplikasi terintegrasi dengan Google Sheets dan Google Apps Script sebagai sistem penyimpanan data, sehingga dapat digunakan tanpa database hosting khusus. Setiap pembelian mendapatkan satu aplikasi yang dikonfigurasi secara individual menggunakan satu akun Google dan satu Google Apps Script.",
     fitur: [
         "Dashboard Keuangan",
