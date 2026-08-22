@@ -1,0 +1,170 @@
+function pastikanSheetAda(namaSheet, header, ss) {
+  let sheet = ss.getSheetByName(namaSheet);
+  if (!sheet) {
+    sheet = ss.insertSheet(namaSheet);
+    if (header && header.length > 0) {
+      sheet.appendRow(header);
+      sheet.getRange(1, 1, 1, header.length).setFontWeight("bold");
+    }
+  } else {
+    // LOGIKA PERBAIKAN OTOMATIS: Jika sheet sudah ada tapi kolom NIS (kolom ke-6) belum ada, tambahkan otomatis!
+    if (header && header.length > 0) {
+      let lastCol = sheet.getLastColumn() || 1;
+      if (lastCol < header.length) {
+        sheet.getRange(1, 1, 1, header.length).setValues([header]);
+        sheet.getRange(1, 1, 1, header.length).setFontWeight("bold");
+      }
+    }
+  }
+  return sheet;
+}
+
+function doGet(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetSantri = pastikanSheetAda("Data Santri", ["NIS", "Nama Lengkap", "JK", "TTL", "Kelas", "Alamat", "Ayah", "Ibu", "HP", "Status Pembayaran"], ss);
+    const sheetPengeluaran = pastikanSheetAda("Pengeluaran", ["Tanggal", "Kategori", "Nominal", "Keterangan"], ss);
+    const sheetSetting = pastikanSheetAda("Pengaturan", ["Jenis Pembayaran", "TK", "IBT", "SANA"], ss);
+
+    let settingBiaya = [];
+    const dataSetting = sheetSetting.getDataRange().getValues();
+    for (let i = 1; i < dataSetting.length; i++) {
+      if (dataSetting[i][0]) settingBiaya.push({ jenis: dataSetting[i][0].toString().trim(), TK: Number(dataSetting[i][1]) || 0, IBT: Number(dataSetting[i][2]) || 0, SANA: Number(dataSetting[i][3]) || 0 });
+    }
+
+    let rekapKas = {};
+    settingBiaya.forEach(s => rekapKas[s.jenis] = { masuk: 0, keluar: 0 });
+
+    const santriList = [];
+    const dataRows = sheetSantri.getDataRange().getValues();
+    for (let i = 1; i < dataRows.length; i++) {
+      if (dataRows[i][0] || dataRows[i][1]) {
+        santriList.push({ nis: dataRows[i][0].toString().trim(), nama: dataRows[i][1].toString().trim(), kelas: dataRows[i][4] ? dataRows[i][4].toString().trim() : "", status: dataRows[i][9] ? dataRows[i][9].toString().trim() : "Belum Bayar" });
+      }
+    }
+
+    const pembayaranList = [];
+    settingBiaya.forEach(setting => {
+      let sheetPembayaran = ss.getSheetByName("Pembayaran - " + setting.jenis);
+      if (sheetPembayaran) {
+        let bayarRows = sheetPembayaran.getDataRange().getValues();
+        for (let i = 1; i < bayarRows.length; i++) {
+          if (bayarRows[i][1]) {
+            let j = bayarRows[i][3].toString().trim();
+            let n = Number(bayarRows[i][4]) || 0;
+            // Ambil NIS dari kolom F (Index 5)
+            let nisData = bayarRows[i][5] ? bayarRows[i][5].toString().trim() : "";
+            pembayaranList.push({ row: i + 1, tanggal: bayarRows[i][0], nama: bayarRows[i][1].toString().trim(), kelas: bayarRows[i][2].toString().trim(), jenis: j, nominal: n, nis: nisData });
+            if (!rekapKas[j]) rekapKas[j] = { masuk: 0, keluar: 0 };
+            rekapKas[j].masuk += n;
+          }
+        }
+      }
+    });
+
+    const keluarRows = sheetPengeluaran.getDataRange().getValues();
+    for (let i = 1; i < keluarRows.length; i++) {
+      if (keluarRows[i][1]) {
+        let k = keluarRows[i][1].toString().trim();
+        let n = Number(keluarRows[i][2]) || 0;
+        if (!rekapKas[k]) rekapKas[k] = { masuk: 0, keluar: 0 };
+        rekapKas[k].keluar += n;
+      }
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ statistik: { totalSantri: santriList.length }, rekapKas: rekapKas, santri: santriList, pembayaran: pembayaranList, setting: settingBiaya })).setMimeType(ContentService.MimeType.JSON);
+  } catch (error) { return ContentService.createTextOutput(JSON.stringify({ error: error.toString() })).setMimeType(ContentService.MimeType.JSON); }
+}
+
+function doPost(e) {
+  try {
+    const request = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    if (request.action === 'simpan_setting') {
+      let sheetSetting = ss.getSheetByName("Pengaturan");
+      if(sheetSetting) ss.deleteSheet(sheetSetting);
+      sheetSetting = ss.insertSheet("Pengaturan");
+      sheetSetting.appendRow(["Jenis Pembayaran", "TK", "IBT", "SANA"]);
+      sheetSetting.getRange("A1:D1").setFontWeight("bold");
+
+      const rows = [];
+      request.data.forEach(item => {
+        if(item.jenis && item.jenis.trim() !== '') {
+          rows.push([item.jenis, item.TK || 0, item.IBT || 0, item.SANA || 0]);
+          // SELALU MEMASTIKAN ADA 6 KOLOM TERMASUK NIS
+          pastikanSheetAda("Pembayaran - " + item.jenis, ["Tanggal", "Nama Santri", "Kelas", "Jenis Pembayaran", "Nominal", "NIS"], ss);
+        }
+      });
+      if(rows.length > 0) sheetSetting.getRange(2, 1, rows.length, 4).setValues(rows);
+      return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Pengaturan disimpan!" })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (request.action === 'hapus_pembayaran') {
+       const d = request.data;
+       const sheet = ss.getSheetByName("Pembayaran - " + d.jenis); 
+       if(sheet) sheet.deleteRow(d.index);
+       return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Dihapus!" })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (request.action === 'import_santri') {
+      let sheet = pastikanSheetAda("Data Santri", ["NIS", "Nama Lengkap", "JK", "TTL", "Kelas", "Alamat", "Ayah", "Ibu", "HP", "Status Pembayaran"], ss);
+      const dataBaru = request.data.map(s => [s.NIS, s.Nama, s.JK, s.TTL, s.Kelas, s.Alamat, s.Ayah, s.Ibu, s.HP, "Belum Bayar"]);
+      sheet.getRange(sheet.getLastRow() + 1, 1, dataBaru.length, dataBaru[0].length).setValues(dataBaru);
+      return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Diimport!" })).setMimeType(ContentService.MimeType.JSON);
+    }
+	
+	if (request.action === 'reset_santri') {
+      let sheet = ss.getSheetByName("Data Santri");
+      if (sheet) {
+        let lastRow = sheet.getLastRow();
+        let lastCol = sheet.getLastColumn();
+        // Hapus data dari baris ke-2 ke bawah agar Header (baris 1) tetap aman
+        if (lastRow > 1) {
+          sheet.getRange(2, 1, lastRow - 1, lastCol).clearContent();
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Semua data santri berhasil dikosongkan!" })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (request.action === 'simpan_pembayaran') {
+      let settingBiaya = ss.getSheetByName("Pengaturan").getDataRange().getValues().slice(1).map(r => ({ jenis: r[0].toString().trim(), TK: Number(r[1])||0, IBT: Number(r[2])||0, SANA: Number(r[3])||0 }));
+      
+      let [nisInput, namaInput, jenisInput, kelasInput, nominalInput] = [(request.data.nis || "").toString().trim(), request.data.nama.trim(), request.data.jenis.trim(), request.data.kelas.trim(), Number(request.data.nominal)||0];
+      
+      // Validasi Ekstra dari Server
+      if (nisInput === "") return ContentService.createTextOutput(JSON.stringify({ success: false, message: `GAGAL: Data santri tidak memiliki NIS valid.` })).setMimeType(ContentService.MimeType.JSON);
+
+      let sheetPembayaran = pastikanSheetAda("Pembayaran - " + jenisInput, ["Tanggal", "Nama Santri", "Kelas", "Jenis Pembayaran", "Nominal", "NIS"], ss);
+      let target = 0, set = settingBiaya.find(s => s.jenis.toLowerCase() === jenisInput.toLowerCase());
+      if (set) { let k = kelasInput.toUpperCase(); target = k.includes("TK") ? set.TK : (k.includes("IBT") ? set.IBT : (k.includes("SANA") ? set.SANA : 0)); }
+      
+      // Murni mencocokkan total lunas berdasarkan NIS
+      let totalTerbayar = sheetPembayaran.getDataRange().getValues().slice(1).reduce((sum, r) => {
+          let isMatch = false;
+          if (r[5]) isMatch = (r[5].toString().trim() === nisInput); 
+          else isMatch = (r[1] == namaInput && r[2] == kelasInput); // Fallback data sangat lama
+          return (isMatch && r[3] == jenisInput) ? sum + (Number(r[4])||0) : sum;
+      }, 0);
+
+      if (target > 0) {
+        if (totalTerbayar >= target) return ContentService.createTextOutput(JSON.stringify({ success: false, message: `DITOLAK: Sudah LUNAS!` })).setMimeType(ContentService.MimeType.JSON);
+        if ((totalTerbayar + nominalInput) > target) return ContentService.createTextOutput(JSON.stringify({ success: false, message: `DITOLAK: Kelebihan bayar!` })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      sheetPembayaran.appendRow([new Date(), namaInput, kelasInput, jenisInput, nominalInput, nisInput]);
+      return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Berhasil dicatat!" })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (request.action === 'simpan_pengeluaran') {
+      let sheetPengeluaran = ss.getSheetByName("Pengeluaran");
+      let [kategori, nominal, keterangan] = [request.data.kategori, Number(request.data.nominal), request.data.keterangan];
+      let sheetMasuk = ss.getSheetByName("Pembayaran - " + kategori);
+      let totalMasuk = sheetMasuk ? sheetMasuk.getDataRange().getValues().slice(1).reduce((sum, r) => r[3]==kategori ? sum + (Number(r[4])||0) : sum, 0) : 0;
+      let totalKeluar = sheetPengeluaran.getDataRange().getValues().slice(1).reduce((sum, r) => r[1]==kategori ? sum + (Number(r[2])||0) : sum, 0);
+      if (nominal > (totalMasuk - totalKeluar)) return ContentService.createTextOutput(JSON.stringify({ success: false, message: `DITOLAK: Saldo tidak cukup!` })).setMimeType(ContentService.MimeType.JSON);
+      sheetPengeluaran.appendRow([new Date(), kategori, nominal, keterangan]);
+      return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Pengeluaran dicatat!" })).setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch (error) { return ContentService.createTextOutput(JSON.stringify({ success: false, message: error.toString() })).setMimeType(ContentService.MimeType.JSON); }
+}

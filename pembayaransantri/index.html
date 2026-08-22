@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Sistem Pembayaran Santri</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f766e">
+  
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Meta Tags untuk WhatsApp & Media Sosial (Open Graph) -->
+  <meta property="og:title" content="Biro Keuangan - Manajemen Keuangan MADASA">
+  <meta property="og:description" content="Platform digital terpadu untuk manajemen keuangan santri. Kelola segala jenis tagihan, pembayaran, kas, dan pengeluaran kegiatan secara otomatis dan efisien.">
+  <meta property="og:image" content="https://semoljeh.github.io/tahun/logo.png">
+  <meta property="og:url" content="https://semoljeh.github.io/tahun/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  
+  <!-- PUSTAKA BARU UNTUK EXPORT PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script>
+    tailwind.config = {
+      theme: { 
+        extend: { 
+          fontFamily: { sans: ['Outfit', 'sans-serif'] },
+          colors: { 
+            teal: { 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e' } 
+          }, 
+          borderRadius: { '3xl': '24px', '4xl': '32px' },
+          boxShadow: { 'soft': '0 10px 40px -10px rgba(0,0,0,0.08)' }
+        } 
+      }
+    }
+  </script>
+  
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    body { background-color: #f3f4f6; } 
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    
+    .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes fadeIn { 
+      from { opacity: 0; transform: translateY(15px); } 
+      to { opacity: 1; transform: translateY(0); } 
+    }
+
+    .nav-btn { transition: all 0.3s ease; position: relative; }
+    .nav-btn:active { transform: scale(0.95); }
+    
+    .mobile-container {
+      max-width: 480px;
+      margin: 0 auto;
+      background-color: #fafaf9;
+      min-height: 100vh;
+      position: relative;
+      box-shadow: 0 0 50px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+
+<body class="text-gray-800 font-sans antialiased">
+
+  <!-- BANNER NOTIFIKASI INSTALL PWA -->
+  <div id="install-banner" class="hidden fixed top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-[400px] bg-white rounded-2xl shadow-2xl border border-teal-100 p-4 z-[100] flex items-center justify-between transition-all duration-500 transform -translate-y-20 opacity-0">
+    <div class="flex items-center gap-3">
+      <img src="logo.png" alt="Logo" class="w-10 h-10 rounded-xl shadow-sm border border-gray-100">
+      <div>
+        <h4 class="text-sm font-bold text-gray-800 leading-tight">Install Aplikasi</h4>
+        <p class="text-[10px] text-gray-500 mt-0.5">Pasang di layar utama HP Anda.</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <button id="btn-tutup-install" class="text-[10px] font-bold text-gray-400 hover:text-gray-600 px-2 py-2">Batal</button>
+      <button id="btn-install" class="bg-teal-600 text-white text-[11px] font-bold py-2 px-4 rounded-xl shadow-md hover:bg-teal-700 transition-colors">Install</button>
+    </div>
+  </div>
+  
+  <!-- LAYAR LOGIN -->
+  <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-100 px-4 hidden">
+    <div class="max-w-sm w-full bg-white p-8 rounded-[32px] shadow-soft text-center">
+      <div class="w-16 h-16 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border border-teal-100">
+        <i class="fas fa-lock"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-800 mb-2">Sistem Keamanan</h2>
+      <p class="text-xs text-gray-500 mb-6">Silakan masukkan PIN untuk mengakses data.</p>
+      
+      <input type="password" id="inputPassword" placeholder="••••••" class="w-full border border-gray-100 shadow-inner rounded-xl p-4 mb-4 text-center text-2xl focus:outline-none focus:ring-2 focus:ring-teal-500 font-bold tracking-[0.5em] bg-gray-50">
+      
+      <button onclick="prosesLogin()" class="w-full bg-teal-600 text-white font-bold py-3.5 rounded-xl hover:bg-teal-700 transition shadow-md">
+        BUKA SISTEM
+      </button>
+    </div>
+  </div>
+
+  <!-- KODE UTAMA APLIKASI -->
+  <div id="main-app" class="mobile-container pb-24 relative shadow-soft overflow-hidden hidden">
+
+    <header class="bg-gradient-to-r from-teal-700 to-teal-600 text-white p-5 pt-6 shadow-md rounded-b-[2rem] sticky top-0 z-50 relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none"></div>
+      <div class="absolute bottom-0 left-0 w-24 h-24 bg-black opacity-5 rounded-full blur-xl -ml-8 -mb-8 pointer-events-none"></div>
+      
+      <div class="relative z-10 flex justify-between items-center">
+        <!-- Bagian Kiri: Logo & Judul -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 shadow-inner">
+            <i class="fas fa-wallet text-lg"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold tracking-tight leading-tight">Biro Keuangan</h1>
+            <p class="text-[10px] text-emerald-100 font-medium tracking-widest uppercase opacity-80">Manajemen Keuangan Santri</p>
+          </div>
+        </div>
+
+        <!-- Bagian Kanan: Tombol Logout -->
+        <button onclick="prosesLogout()" class="w-10 h-10 bg-white/10 hover:bg-red-500/90 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20 shadow-sm transition-all text-white group" title="Keluar Aplikasi">
+          <i class="fas fa-sign-out-alt text-sm group-hover:scale-110 transition-transform"></i>
+        </button>
+      </div>
+    </header>
+
+    <main id="app-content" class="fade-in mt-2 min-h-screen">
+      <div class="animate-pulse flex flex-col gap-5 p-5">
+        <div class="h-32 bg-gray-200 rounded-4xl w-full"></div>
+        <div class="grid grid-cols-4 gap-3">
+          <div class="h-16 bg-gray-200 rounded-2xl"></div>
+          <div class="h-16 bg-gray-200 rounded-2xl"></div>
+          <div class="h-16 bg-gray-200 rounded-2xl"></div>
+          <div class="h-16 bg-gray-200 rounded-2xl"></div>
+        </div>
+        <div class="h-24 bg-gray-200 rounded-3xl w-full"></div>
+      </div>
+    </main>
+
+    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] rounded-t-[2rem] px-2 py-3 grid grid-cols-5 items-center z-50">
+      <button onclick="renderDashboard()" class="nav-btn text-gray-400 flex flex-col items-center gap-1">
+        <i class="fas fa-home text-lg"></i>
+        <span class="text-[9px] font-bold">Beranda</span>
+      </button>
+      <button onclick="renderPembayaran()" class="nav-btn text-gray-400 flex flex-col items-center gap-1">
+        <i class="fas fa-users text-lg"></i>
+        <span class="text-[9px] font-bold">Santri</span>
+      </button>
+      <button onclick="bukaTransaksiCepat()" class="flex flex-col items-center justify-center">
+        <div class="bg-teal-600 text-white w-12 h-12 rounded-2xl shadow-lg shadow-teal-200 flex items-center justify-center text-xl hover:scale-105 transition-transform">
+          <i class="fas fa-plus"></i>
+        </div>
+      </button>
+      <button onclick="renderLaporan()" class="nav-btn text-gray-400 flex flex-col items-center gap-1">
+        <i class="fas fa-chart-pie text-lg"></i>
+        <span class="text-[9px] font-bold">Laporan</span>
+      </button>
+      <button onclick="renderSetting()" class="nav-btn text-gray-400 flex flex-col items-center gap-1">
+        <i class="fas fa-cog text-lg"></i>
+        <span class="text-[9px] font-bold">Setting</span>
+      </button>
+    </nav>
+  </div> 
+  <script src="app.js?v=1.3"></script>
+</body>
+</html>
