@@ -1,8 +1,7 @@
 // GANTI DENGAN URL WEB APP GAS ANDA YANG BARU SETELAH DEPLOY!
-const API_URL = 'https://script.google.com/macros/s/AKfycbyXGzYbE94YgBQLoNGBSSuvNz5kGQlzMTrrxfYsIVTLAVoGfFXnIVtH2dggNDm_C5jocw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxQB9khep2ucwt7mESFWptu312uR6LkMo2BzrYr1bhu0Z0Zk53RCpG1QhWQyst3d1RZ/exec';
 let appData = null;
 let dataSettingLokal = [];
-const PIN_SISTEM = "112233"; 
 
 // Variabel Global untuk mengingat filter laporan
 window.laporanTabAktif = null;
@@ -39,20 +38,45 @@ if (sessionStorage.getItem('sudahLogin') === 'true') {
   document.getElementById('login-screen')?.classList.remove('hidden');
 }
 
-function prosesLogin() {
-  if (document.getElementById('inputPassword').value === PIN_SISTEM) {
-    sessionStorage.setItem('sudahLogin', 'true'); 
-    tampilkanAplikasiUtama();
-  } else {
-    Swal.fire({ icon: 'error', title: 'Akses Ditolak', text: 'PIN salah!', confirmButtonColor: '#0f766e' });
-    document.getElementById('inputPassword').value = ''; 
+async function prosesLogin() {
+  const userIn = document.getElementById('inputUsername').value.trim();
+  const passIn = document.getElementById('inputPassword').value.trim();
+  
+  if (!userIn || !passIn) {
+    Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Silakan masukkan Username dan Password!', confirmButtonColor: '#0f766e' });
+    return;
+  }
+
+  Swal.fire({
+    title: 'Memeriksa Kredensial...',
+    allowOutsideClick: false,
+    didOpen: () => { Swal.showLoading(); }
+  });
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'verifikasi_login', username: userIn, password: passIn })
+    });
+    const result = await res.json();
+    Swal.close();
+
+    if (result.success) {
+      sessionStorage.setItem('sudahLogin', 'true');
+      tampilkanAplikasiUtama();
+    } else {
+      Swal.fire({ icon: 'error', title: 'Akses Ditolak', text: result.message || 'Username atau Password salah!', confirmButtonColor: '#0f766e' });
+      document.getElementById('inputPassword').value = ''; // Hanya reset password
+    }
+  } catch (error) {
+    Swal.fire({ icon: 'error', title: 'Koneksi Gagal', text: 'Gagal terhubung ke server Google Sheets.', confirmButtonColor: '#0f766e' });
   }
 }
 
 function prosesLogout() {
   Swal.fire({
     title: 'Keluar dari Sistem?',
-    text: 'Sesi Anda akan ditutup dan membutuhkan PIN untuk masuk kembali.',
+    text: 'Sesi Anda akan ditutup dan membutuhkan akses login untuk masuk kembali.',
     icon: 'question',
     showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#94a3b8',
     confirmButtonText: '<i class="fas fa-sign-out-alt mr-1"></i> Ya, Keluar', cancelButtonText: 'Batal',
@@ -163,15 +187,14 @@ function renderPembayaran(filterManual = null, isBack = false) {
    <div class="max-w-2xl mx-auto pb-20 pt-4 px-7">
       <div class="relative mb-4">
         <select onchange="renderPembayaran(this.value)" class="w-full bg-white border border-gray-100 shadow-sm rounded-2xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:border-emerald-500 cursor-pointer appearance-none">
-          <option value="Semua" ${filterTingkat === 'Semua' ? 'selected' : ''}>🌍 Semua Data Santri</option>
-          ${uniqueClasses.map(c => `<option value="${c}" ${filterTingkat === c ? 'selected' : ''}>🏫 Kelas ${c}</option>`).join('')}
+          <option value="Semua" ${filterTingkat === 'Semua' ? 'selected' : ''}>📋 Semua Data Santri</option>
+          ${uniqueClasses.map(c => `<option value="${c}" ${filterTingkat === c ? 'selected' : ''}>🎓 Kelas ${c}</option>`).join('')}
         </select>
         <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-emerald-500"><i class="fas fa-chevron-down"></i></div>
       </div>
      
 	 <div class="flex items-center gap-2 mb-6">
         <div class="relative flex-1"><i class="fas fa-search absolute left-4 top-3.5 text-gray-400 text-sm"></i><input type="text" id="inputPencarian" onkeyup="filterSantri()" placeholder="Cari nama atau NIS..." class="w-full bg-white border border-gray-100 shadow-sm rounded-2xl pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20"></div>
-        <!-- TOMBOL RESET DITAMBAHKAN DI SINI -->
         <button onclick="resetDataSantri()" class="bg-white border border-gray-100 shadow-sm text-red-500 px-4 py-3.5 rounded-2xl hover:bg-red-50 transition-all" title="Kosongkan Data Santri"><i class="fas fa-trash-alt text-lg"></i></button>
         <button onclick="bukaFormImport()" class="bg-white border border-gray-100 shadow-sm text-blue-600 px-4 py-3.5 rounded-2xl hover:bg-blue-50 transition-all"><i class="fas fa-file-import text-lg"></i></button>
       </div>
@@ -368,7 +391,7 @@ function renderLaporan(tabAktif = null, kelasAktif = null, isBack = false) {
   const uniqueClasses = [...new Set(appData.santri.map(s => s.kelas).filter(k => k))].sort();
   
   let dropdownTagihanHTML = appData.setting.map(s => `<option value="${s.jenis}" ${tabAktif === s.jenis ? 'selected' : ''}>📋 Tagihan: ${s.jenis}</option>`).join('');
-  let dropdownKelasHTML = `<option value="Semua" ${kelasAktif === 'Semua' ? 'selected' : ''}>🌍 Semua Kelas</option>` + uniqueClasses.map(c => `<option value="${c}" ${kelasAktif === c ? 'selected' : ''}>🏫 Kelas ${c}</option>`).join('');
+  let dropdownKelasHTML = `<option value="Semua" ${kelasAktif === 'Semua' ? 'selected' : ''}>📋 Semua Kelas</option>` + uniqueClasses.map(c => `<option value="${c}" ${kelasAktif === c ? 'selected' : ''}>🎓 Kelas ${c}</option>`).join('');
 
   document.getElementById('app-content').innerHTML = `
     <div class="max-w-2xl mx-auto pb-12 pt-4 px-7">
@@ -593,14 +616,44 @@ async function simpanSettingBiaya() {
 // ==========================================
 // IMPORT EXCEL DLL & DOWNLOAD TEMPLATE
 // ==========================================
+// ==========================================
+// IMPORT EXCEL DLL & DOWNLOAD TEMPLATE
+// ==========================================
 function downloadTemplate() {
+  // Format data disesuaikan persis dengan header di Google Sheets Anda
   const templateData = [
-    { "NIS": "84260001", "Nama Lengkap": "MOH RIZIEQ", "JK": "L", "TTL": "Bangkalan, 11 Oktober 2010", "Kelas": "SANA - Kelas 2", "Alamat": "Telentean Dsn Longkak", "Ayah": "Masudi", "Ibu": "Maryatun", "HP": "081330206609" },
-    { "NIS": "84260002", "Nama Lengkap": "SITI MARYAM", "JK": "P", "TTL": "Surabaya, 1 Januari 2012", "Kelas": "IBT - Kelas VI", "Alamat": "Jl. Contoh No 123", "Ayah": "Budi", "Ibu": "Siti", "HP": "081234567890" }
+    { 
+      "NIS": "84260001", 
+      "Nama Lengkap": "Arom Kobama", 
+      "JK": "L", 
+      "TTL": "Bangkalan, 11 Oktober 2010", 
+      "Kelas": "SANA", 
+      "Alamat": "Telentean Dsn Longkak", 
+      "Ayah": "Masudi", 
+      "Ibu": "Maryatun", 
+      "HP": "081330206609",
+      "Status Pembayaran": "Belum Bayar"
+    },
+    { 
+      "NIS": "84260002", 
+      "Nama Lengkap": "Siti", 
+      "JK": "P", 
+      "TTL": "Surabaya, 1 Januari 2012", 
+      "Kelas": "IBT", 
+      "Alamat": "Jl. Contoh No 123", 
+      "Ayah": "Budi", 
+      "Ibu": "Siti", 
+      "HP": "081234567890",
+      "Status Pembayaran": "Belum Bayar"
+    }
   ];
+  
+  // Proses pembuatan file Excel
   const worksheet = XLSX.utils.json_to_sheet(templateData);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Data Santri");
+  
+  // Download otomatis ke perangkat
   XLSX.writeFile(workbook, "Template_Data_Santri.xlsx");
 }
 
