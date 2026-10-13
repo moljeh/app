@@ -129,7 +129,7 @@
             // Jika variabel ADMIN_PHONE belum terbaca, kita set manual di sini
             const adminPhone = typeof ADMIN_PHONE !== 'undefined' ? ADMIN_PHONE : "6281234567890"; 
             
-            const waMessage = `Halo Tim LuminaUI,\n\nNama saya *${nama}*.\nKebutuhan: *${kebutuhan}*\n\n${pesan}`;
+            const waMessage = `Halo Tim Arom UI,\n\nNama saya *${nama}*.\nKebutuhan: *${kebutuhan}*\n\n${pesan}`;
             const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(waMessage)}`;
             
             window.open(waUrl, '_blank');
